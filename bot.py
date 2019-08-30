@@ -27,6 +27,7 @@ config = configparser.ConfigParser()
 config.read("/home/quiterion/discord-bots/Good-Memer/config.ini")
 TOKEN = config.get("Discord", "TOKEN")
 EMBED_COLOUR = int(config.get("Discord", "Embed Colour"), 16)
+TRUSTED_SERVER_ID = config.getint("Discord", "Trusted Server ID")
 MC_URL = config.get("Minecraft", "URL")
 MC_IPV4_PORT = config.get("Minecraft", "IPv4 Port")
 MC_IPV6_PORT = config.get("Minecraft", "IPv6 Port")
@@ -47,7 +48,13 @@ async def vidlink(ctx, channel: discord.VoiceChannel):
 
 @bot.command()
 async def mcstatus(ctx):
-    # Command that sends an embed with information about a locally running  minecraft server.
+    # Command that sends an embed with information about a locally running minecraft server. Only outputs information in trusted server
+
+    if ctx.guild.id != TRUSTED_SERVER_ID:
+        print(f"Information access request denied!\nServer ID: {ctx.guild.id}\nExpected ID: {TRUSTED_SERVER_ID}\n")
+        await ctx.send(embed=discord.Embed(title="Hypernet Server Information", description="Information access denied!", type="rich", colour=EMBED_COLOUR))
+        return
+
     hypernet_status = not ("inactive" in subprocess.run('/bin/systemctl status mc-hypernet', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
     embd = discord.Embed(title="Hypernet Server Information", type="rich", colour=EMBED_COLOUR)
     embd.set_thumbnail(url=MC_THUMBNAIL_URL)
