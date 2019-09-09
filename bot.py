@@ -109,24 +109,6 @@ async def del_quote(ctx, given_id):
         quotes_db.close()
 
 @bot.command()
-async def q(ctx, trig):
-    try:
-        quotes_db = sqlite3.connect("quotes-db")
-        cursor = quotes_db.cursor()
-        cursor.execute(f'SELECT content FROM quotes_{ctx.guild.id} WHERE trigger = ?', (trig,))
-        result = cursor.fetchone()
-        if result:
-            await ctx.send(str(result[0]))
-    except sqlite3.Error as error:
-        quotes_db.rollback()
-        await ctx.send(embed=discord.Embed(title="Oopsie, we did a fucky wucky",
-            type="rich", colour=EMBED_COLOUR, description=str(error)))
-        raise error
-    finally:
-        cursor.close()
-        quotes_db.close()
-
-@bot.command()
 async def list_quotes(ctx):
     try:
         quotes_db = sqlite3.connect("quotes-db")
@@ -154,5 +136,29 @@ async def s(ctx, message):
     embd.add_field(name="Received Message", value=message)
     embd.add_field(name="Generated Response", value=response)
     await ctx.send(embed=embd)
+
+@bot.event
+async def on_message(message):
+
+    if message.startswitch("I'm ") and messsage.author != bot.user:    if message.author == client.user:
+        return
+        message.channel.send(f"Hi {message[4:]}, I'm Dad!")
+
+    try:
+        quotes_db = sqlite3.connect("quotes-db")
+        cursor = quotes_db.cursor()
+        cursor.execute(f'SELECT content FROM quotes_{message.guild.id} WHERE trigger = ?', (message.content,))
+        result = cursor.fetchone()
+        if result:
+            await message.channel.send(str(result[0]))
+    except sqlite3.Error as error:
+        quotes_db.rollback()
+        # Don't send a message to chat given this coroutine runs for every single message
+        raise error
+    finally:
+        cursor.close()
+        quotes_db.close()
+
+    await bot.process_commands(message)
 
 bot.run(TOKEN)
