@@ -139,25 +139,29 @@ async def s(ctx, message):
 
 @bot.event
 async def on_message(message):
-
-    if message.startswitch("I'm ") and messsage.author != bot.user:    if message.author == client.user:
+    
+    if message.author == bot.user:
+        await bot.process_commands(message)
         return
-        message.channel.send(f"Hi {message[4:]}, I'm Dad!")
 
-    try:
-        quotes_db = sqlite3.connect("quotes-db")
-        cursor = quotes_db.cursor()
-        cursor.execute(f'SELECT content FROM quotes_{message.guild.id} WHERE trigger = ?', (message.content,))
-        result = cursor.fetchone()
-        if result:
-            await message.channel.send(str(result[0]))
-    except sqlite3.Error as error:
-        quotes_db.rollback()
-        # Don't send a message to chat given this coroutine runs for every single message
-        raise error
-    finally:
-        cursor.close()
-        quotes_db.close()
+    if message.content.startswith("I'm "):
+        await message.channel.send(f"Hi {message.content[4:]}, I'm Dad!")
+
+    if not message.content.startswith("$"):
+        try:
+            quotes_db = sqlite3.connect("quotes-db")
+            cursor = quotes_db.cursor()
+            cursor.execute(f'SELECT content FROM quotes_{message.guild.id} WHERE trigger = ?', (message.content,))
+            result = cursor.fetchone()
+            if result:
+                await message.channel.send(str(result[0]))
+        except sqlite3.Error as error:
+            quotes_db.rollback()
+            # Don't send a message to chat given this coroutine runs for every single message
+            raise error
+        finally:
+            cursor.close()
+            quotes_db.close()
 
     await bot.process_commands(message)
 
