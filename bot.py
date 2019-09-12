@@ -130,22 +130,29 @@ async def list_quotes(ctx):
         quotes_db.close()
 
 @bot.command()
-async def s(ctx, message):
+async def s(ctx, *, message):
     response = str(chatbot.get_response(message))
-    embd =discord.Embed(title="Chatterbot Output", type="rich", colour=EMBED_COLOUR)
-    embd.add_field(name="Received Message", value=message)
-    embd.add_field(name="Generated Response", value=response)
+    embd = discord.Embed(title="Chatterbot Output", description=response, type="rich", colour=EMBED_COLOUR)
     await ctx.send(embed=embd)
 
 @bot.event
 async def on_message(message):
-    
     if message.author == bot.user:
         await bot.process_commands(message)
         return
 
-    if message.content.startswith("I'm "):
-        await message.channel.send(f"Hi {message.content[4:]}, I'm Dad!")
+    # Lord forgive me for I have sinned
+    # This monstrosity takes a list of tuples of find() indexes and the offset
+    # required to correctly parse the message. The hope is that one of the find()
+    # values will return something other than -1 and we can use the offset value
+    # to parse the message.
+
+    dad_list = [(message.content.find("I'm"), 4), (message.content.find("I‘m"), 4), (message.content.find("I am"), 5)]
+    if any([x[0] != -1 for x in dad_list]):
+        start_index = min([x[0] + x[1] for x in dad_list if x[0] != -1]) 
+        await message.channel.send(f"Hi {message.content[start_index:]}, I'm Dad!")
+        await bot.process_commands(message)
+        return
 
     if not message.content.startswith("$"):
         try:
