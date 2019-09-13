@@ -2,14 +2,16 @@
 
 ## Good Memer, a personal discord bot made by Quiterion
 ## TODOs: ~~video chat link generator~~
-##          chatbot integration,
+##          ~~chatbot integration,~~
 ##          ~~minecraft server status~~
-##          text game integration,
+##          ~~text game integration~~
 ##          ~~quote trigger storage and retrieval~~
 
 import discord
 import sqlite3
 import subprocess
+import re
+import pexpect
 import configparser
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -24,14 +26,20 @@ trainer = ChatterBotCorpusTrainer(chatbot)
 trainer.train("chatterbot.corpus.english")
 
 config = configparser.ConfigParser()
-config.read("/home/quiterion/discord-bots/Good-Memer/config.ini")
+config.read("config.ini")
 TOKEN = config.get("Discord", "TOKEN")
 EMBED_COLOUR = int(config.get("Discord", "Embed Colour"), 16)
 TRUSTED_SERVER_ID = config.getint("Discord", "Trusted Server ID")
+DAD_SHUTUP_CHIDING = config.get("Discord", "Dad Chiding")
 MC_URL = config.get("Minecraft", "URL")
 MC_IPV4_PORT = config.get("Minecraft", "IPv4 Port")
 MC_IPV6_PORT = config.get("Minecraft", "IPv6 Port")
 MC_THUMBNAIL_URL = config.get("Minecraft", "Thumbnail URL")
+TEXTGAME_PATH = config.get('Text Game', "Text Game Path")
+TEXTGAME_WORLD_PATH = config.get('Text Game', "World Path")
+
+# Dictionary storing server ID's and their text game objects
+TEXT_GAMES = {}
 
 @bot.event
 async def on_ready():
@@ -135,10 +143,52 @@ async def s(ctx, *, message):
     embd = discord.Embed(title="Chatterbot Output", description=response, type="rich", colour=EMBED_COLOUR)
     await ctx.send(embed=embd)
 
+@bot.command()
+async def spawn_game(ctx):
+    textgame = pexpect.spawn('python3 ' + TEXTGAME_PATH + ' ' + TEXTGAME_WORLD_PATH)
+    TEXT_GAMES[ctx.channel.id] = textgame
+    textgame.expect('> ')
+    desc = "Adventure Quest instance succesfully opened for this channel! Send commands to it with \"$z <text>\" and end the game with \"$end\""
+    embd = discord.Embed(title="Text Game Creation", description=desc, type="rich", colour=EMBED_COLOUR)
+    await ctx.send("```" + textgame.before.decode('utf-8') + "```", embed=embd)
+
+@bot.command()
+async def z(ctx, *, message):
+    textgame = TEXT_GAMES.get(ctx.channel.id, 0)
+    if textgame == 0:
+        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$spawn_game\"", colour=EMBED_COLOUR)
+        await ctx.send(embed=embd)
+        return
+    textgame.sendline(message)
+    textgame.expect('> ')
+    await ctx.send("```> " + textgame.before.decode('utf-8') + "```")
+
+@bot.command()
+async def end(ctx):
+    textgame = TEXT_GAMES.get(ctx.channel.id, 0)
+    if textgame == 0:
+        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$spawn_game\"", colour=EMBED_COLOUR)
+    else:
+        textgame.terminate()
+        del TEXT_GAMES[ctx.channel.id]
+        embd = discord.Embed(title="Text Game Output", description="Text game terminated succesfully.", colour=EMBED_COLOUR)
+    await ctx.send(embed=embd)
+
+
+
+
 @bot.event
 async def on_message(message):
+    # Coroutine that runs upon each message, main purpose
+    # is to catch quote triggers and provide Dad-Bot-like functions.
+
     if message.author == bot.user:
         await bot.process_commands(message)
+        return
+    
+    if 'stfu' in message.content.lower() or re.findall(r'shut.*up', message.content.lower()) != []:
+        chide = DAD_SHUTUP_CHIDING.replace("{user}", message.author.mention)
+        await message.channel.send(chide)
         return
 
     # Lord forgive me for I have sinned
@@ -169,7 +219,8 @@ async def on_message(message):
         finally:
             cursor.close()
             quotes_db.close()
-
+    
+    # Allows bot.command() coroutines to run
     await bot.process_commands(message)
 
 bot.run(TOKEN)

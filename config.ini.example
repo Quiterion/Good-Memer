@@ -2,9 +2,14 @@
 Token =
 Trusted Server ID =
 Embed Colour =
+Dad Chiding = 
 
 [Minecraft]
 URL =
 IPv4 Port =
 IPv6 Port =
 Thumbnail URL =
+
+[Text Game]
+Text Game Path =
+World Path =
