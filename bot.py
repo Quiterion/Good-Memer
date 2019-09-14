@@ -26,7 +26,7 @@ trainer = ChatterBotCorpusTrainer(chatbot)
 trainer.train("chatterbot.corpus.english")
 
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("/home/quiterion/discord-bots/Good-Memer/config.ini")
 TOKEN = config.get("Discord", "TOKEN")
 EMBED_COLOUR = int(config.get("Discord", "Embed Colour"), 16)
 TRUSTED_SERVER_ID = config.getint("Discord", "Trusted Server ID")
@@ -47,15 +47,15 @@ async def on_ready():
     print(f"Logged in as:\n{bot.user.name}\n{bot.user.id}\n-----------")
 
 @bot.command()
-async def vidlink(ctx, channel: discord.VoiceChannel):
+async def vid(ctx, channel: discord.VoiceChannel):
     # Command that generates a link for screensharing in a specified voice channel
     embd = discord.Embed(title="Channel-Specific Screenshare Link", 
-            description=f"https://canary.discordapp.com/channels/{ctx.guild.id}/{channel.id}",
+            description=f"https://discordapp.com/channels/{ctx.guild.id}/{channel.id}",
             type="rich", colour=EMBED_COLOUR)
     await ctx.send(embed=embd)
 
 @bot.command()
-async def mcstatus(ctx):
+async def mcstat(ctx):
     # Command that sends an embed with information about a locally running minecraft server. Only outputs information in trusted server
 
     if ctx.guild.id != TRUSTED_SERVER_ID:
@@ -74,7 +74,7 @@ async def mcstatus(ctx):
     await ctx.send(embed=embd)
 
 @bot.command()
-async def add_quote(ctx, trigger, content):
+async def add(ctx, trigger, content):
     try:
         quotes_db = sqlite3.connect("quotes-db")
         cursor = quotes_db.cursor()
@@ -99,7 +99,7 @@ async def add_quote(ctx, trigger, content):
 
 
 @bot.command()
-async def del_quote(ctx, given_id):
+async def delete(ctx, given_id):
     try:
         quotes_db = sqlite3.connect("quotes-db")
         cursor = quotes_db.cursor()
@@ -117,7 +117,7 @@ async def del_quote(ctx, given_id):
         quotes_db.close()
 
 @bot.command()
-async def list_quotes(ctx):
+async def list(ctx):
     try:
         quotes_db = sqlite3.connect("quotes-db")
         cursor = quotes_db.cursor()
@@ -144,7 +144,7 @@ async def s(ctx, *, message):
     await ctx.send(embed=embd)
 
 @bot.command()
-async def spawn_game(ctx):
+async def game(ctx):
     textgame = pexpect.spawn('python3 ' + TEXTGAME_PATH + ' ' + TEXTGAME_WORLD_PATH)
     TEXT_GAMES[ctx.channel.id] = textgame
     textgame.expect('> ')
@@ -156,7 +156,7 @@ async def spawn_game(ctx):
 async def z(ctx, *, message):
     textgame = TEXT_GAMES.get(ctx.channel.id, 0)
     if textgame == 0:
-        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$spawn_game\"", colour=EMBED_COLOUR)
+        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$game\"", colour=EMBED_COLOUR)
         await ctx.send(embed=embd)
         return
     textgame.sendline(message)
@@ -167,7 +167,7 @@ async def z(ctx, *, message):
 async def end(ctx):
     textgame = TEXT_GAMES.get(ctx.channel.id, 0)
     if textgame == 0:
-        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$spawn_game\"", colour=EMBED_COLOUR)
+        embd = discord.Embed(title="Text Game Output", description="Error! No text game for this channel found. Create one with \"$game\"", colour=EMBED_COLOUR)
     else:
         textgame.terminate()
         del TEXT_GAMES[ctx.channel.id]
